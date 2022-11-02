@@ -33,7 +33,7 @@ tokio = { version = "1.21.2", features = ["io-util", "fs"] }
 async-compression = { version = "0.3.15", default-features = false, features = ["tokio"], optional = true }
 chrono = { version = "0.4.22", default-features = false, features = ["clock"], optional = true}
 
-async_io_utilities = { git = "https://github.com/Majored/rs-async-io-utilities" }
+async_io_utilities = "0.1.4"
 
 [dev-dependencies]
 sanitize-filename = "0.4.0"

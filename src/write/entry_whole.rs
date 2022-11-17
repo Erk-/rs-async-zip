@@ -4,7 +4,7 @@
 use crate::entry::ZipEntry;
 use crate::error::Result;
 use crate::spec::compression::Compression;
-use crate::spec::header::{CentralDirectoryHeader, GeneralPurposeFlag, LocalFileHeader};
+use crate::spec::header::{CentralDirectoryRecord, GeneralPurposeFlag, LocalFileHeader};
 use crate::write::{CentralDirectoryEntry, ZipFileWriter};
 
 #[cfg(any(feature = "deflate", feature = "bzip2", feature = "zstd", feature = "lzma", feature = "xz"))]
@@ -57,7 +57,7 @@ impl<'b, 'c, W: AsyncWrite + Unpin> EntryWholeWriter<'b, 'c, W> {
             },
         };
 
-        let header = CentralDirectoryHeader {
+        let header = CentralDirectoryRecord {
             v_made_by: crate::spec::version::as_made_by(),
             v_needed: lf_header.version,
             compressed_size: lf_header.compressed_size,
@@ -76,7 +76,7 @@ impl<'b, 'c, W: AsyncWrite + Unpin> EntryWholeWriter<'b, 'c, W> {
             lh_offset: self.writer.writer.offset() as u32,
         };
 
-        self.writer.writer.write_all(&crate::spec::signature::LOCAL_FILE_HEADER.to_le_bytes()).await?;
+        self.writer.writer.write_all(&crate::spec::consts::LFH_SIGNATURE.to_le_bytes()).await?;
         self.writer.writer.write_all(&lf_header.as_slice()).await?;
         self.writer.writer.write_all(self.entry.filename().as_bytes()).await?;
         self.writer.writer.write_all(self.entry.extra_field()).await?;

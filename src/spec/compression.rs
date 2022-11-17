@@ -2,8 +2,10 @@
 // MIT License (https://github.com/Majored/rs-async-zip/blob/main/LICENSE)
 
 use crate::error::{Result, ZipError};
+use async_compression::Level;
 
 /// A compression method supported by this crate.
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Compression {
     Stored,
@@ -37,7 +39,7 @@ impl TryFrom<u16> for Compression {
             93 => Ok(Compression::Zstd),
             #[cfg(feature = "xz")]
             95 => Ok(Compression::Xz),
-            _ => Err(ZipError::UnsupportedCompressionError(value)),
+            _ => Err(ZipError::CompressionNotSupported(value)),
         }
     }
 }
@@ -65,5 +67,30 @@ impl From<&Compression> for u16 {
 impl From<Compression> for u16 {
     fn from(compression: Compression) -> u16 {
         (&compression).into()
+    }
+}
+
+/// Level of compression data should be compressed with for deflate.
+#[derive(Debug, Clone, Copy)]
+pub enum DeflateOption {
+    // Normal (-en) compression option was used.
+    Normal,
+
+    // Maximum (-exx/-ex) compression option was used.
+    Maximum,
+
+    // Fast (-ef) compression option was used.
+    Fast,
+
+    // Super Fast (-es) compression option was used.
+    Super,
+}
+
+impl DeflateOption {
+    pub(crate) fn into_level(self) -> Level {
+        // FIXME: There's no clear documentation on what these specific levels defined in the ZIP specification relate
+        // to. We want to be compatible with any other library, and not specific to `async_compression`'s levels.
+
+        Level::Default
     }
 }

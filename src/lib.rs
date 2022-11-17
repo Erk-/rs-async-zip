@@ -12,17 +12,19 @@
 //!
 //! [Read more.](https://github.com/Majored/rs-async-zip)
 
-pub(crate) mod entry;
 pub mod error;
 pub mod read;
-pub(crate) mod spec;
-#[cfg(test)]
-pub(crate) mod tests;
-pub(crate) mod utils;
 pub mod write;
 
-pub use crate::spec::attribute::AttributeCompatibility;
-pub use crate::spec::compression::Compression;
+pub(crate) mod entry;
+pub(crate) mod file;
+pub(crate) mod spec;
 
-pub use crate::entry::ext::{ZipEntryBuilderExt, ZipEntryExt};
-pub use crate::entry::{builder::ZipEntryBuilder, CompressionLevel, ZipEntry};
+#[cfg(test)]
+pub(crate) mod tests;
+
+pub use crate::spec::attribute::AttributeCompatibility;
+pub use crate::spec::compression::{Compression, DeflateOption};
+
+pub use crate::entry::{builder::ZipEntryBuilder, ZipEntry};
+pub use crate::file::{builder::ZipFileBuilder, ZipFile};

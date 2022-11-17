@@ -1,4 +1,4 @@
-// Copyright (c) 2021 Harry [Majored] [hello@majored.pw]
+// Copyright (c) 2021-2022 Harry [Majored] [hello@majored.pw]
 // MIT License (https://github.com/Majored/rs-async-zip/blob/main/LICENSE)
 
 //! A module which supports writing ZIP files.
@@ -53,19 +53,20 @@
 pub(crate) mod compressed_writer;
 pub(crate) mod entry_stream;
 pub(crate) mod entry_whole;
+pub(crate) mod io;
 
 pub use entry_stream::EntryStreamWriter;
 
 use crate::entry::ZipEntry;
 use crate::error::Result;
-use crate::spec::header::{CentralDirectoryHeader, EndOfCentralDirectoryHeader};
-use async_io_utilities::AsyncOffsetWriter;
+use crate::spec::header::{CentralDirectoryRecord, EndOfCentralDirectoryHeader};
 use entry_whole::EntryWholeWriter;
+use io::offset::AsyncOffsetWriter;
 
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 
 pub(crate) struct CentralDirectoryEntry {
-    pub header: CentralDirectoryHeader,
+    pub header: CentralDirectoryRecord,
     pub entry: ZipEntry,
 }
 
@@ -112,7 +113,7 @@ impl<W: AsyncWrite + Unpin> ZipFileWriter<W> {
         let cd_offset = self.writer.offset();
 
         for entry in &self.cd_entries {
-            self.writer.write_all(&crate::spec::signature::CENTRAL_DIRECTORY_FILE_HEADER.to_le_bytes()).await?;
+            self.writer.write_all(&crate::spec::consts::CDH_SIGNATURE.to_le_bytes()).await?;
             self.writer.write_all(&entry.header.as_slice()).await?;
             self.writer.write_all(entry.entry.filename().as_bytes()).await?;
             self.writer.write_all(entry.entry.extra_field()).await?;
@@ -129,7 +130,7 @@ impl<W: AsyncWrite + Unpin> ZipFileWriter<W> {
             file_comm_length: self.comment_opt.as_ref().map(|v| v.len() as u16).unwrap_or_default(),
         };
 
-        self.writer.write_all(&crate::spec::signature::END_OF_CENTRAL_DIRECTORY.to_le_bytes()).await?;
+        self.writer.write_all(&crate::spec::consts::EOCDR_SIGNATURE.to_le_bytes()).await?;
         self.writer.write_all(&header.as_slice()).await?;
         if let Some(comment) = self.comment_opt {
             self.writer.write_all(comment.as_bytes()).await?;

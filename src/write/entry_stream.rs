@@ -3,8 +3,9 @@
 
 use crate::entry::ZipEntry;
 use crate::error::Result;
-use crate::spec::header::{CentralDirectoryHeader, GeneralPurposeFlag, LocalFileHeader};
+use crate::spec::header::{CentralDirectoryRecord, GeneralPurposeFlag, LocalFileHeader};
 use crate::write::compressed_writer::CompressedAsyncWriter;
+use crate::write::io::offset::AsyncOffsetWriter;
 use crate::write::CentralDirectoryEntry;
 use crate::write::ZipFileWriter;
 
@@ -12,7 +13,6 @@ use std::io::Error;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-use async_io_utilities::AsyncOffsetWriter;
 use crc32fast::Hasher;
 use tokio::io::{AsyncWrite, AsyncWriteExt};
 
@@ -67,7 +67,7 @@ impl<'b, W: AsyncWrite + Unpin> EntryStreamWriter<'b, W> {
             },
         };
 
-        writer.writer.write_all(&crate::spec::signature::LOCAL_FILE_HEADER.to_le_bytes()).await?;
+        writer.writer.write_all(&crate::spec::consts::LFH_SIGNATURE.to_le_bytes()).await?;
         writer.writer.write_all(&lfh.as_slice()).await?;
         writer.writer.write_all(entry.filename().as_bytes()).await?;
         writer.writer.write_all(entry.extra_field()).await?;
@@ -92,12 +92,12 @@ impl<'b, W: AsyncWrite + Unpin> EntryStreamWriter<'b, W> {
         let inner_writer = self.writer.into_inner().into_inner();
         let compressed_size = (inner_writer.offset() - self.data_offset) as u32;
 
-        inner_writer.write_all(&crate::spec::signature::DATA_DESCRIPTOR.to_le_bytes()).await?;
+        inner_writer.write_all(&crate::spec::consts::DATA_DESCRIPTOR_SIGNATURE.to_le_bytes()).await?;
         inner_writer.write_all(&crc.to_le_bytes()).await?;
         inner_writer.write_all(&compressed_size.to_le_bytes()).await?;
         inner_writer.write_all(&uncompressed_size.to_le_bytes()).await?;
 
-        let cdh = CentralDirectoryHeader {
+        let cdh = CentralDirectoryRecord {
             compressed_size,
             uncompressed_size,
             crc,

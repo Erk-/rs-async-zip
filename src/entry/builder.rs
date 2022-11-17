@@ -3,18 +3,10 @@
 
 use crate::entry::ZipEntry;
 use crate::spec::attribute::AttributeCompatibility;
-use crate::spec::compression::Compression;
+use crate::spec::compression::{Compression, DeflateOption};
 use chrono::{DateTime, Utc};
 
-#[cfg(doc)]
-use crate::entry::ext::ZipEntryBuilderExt;
-
-use super::CompressionLevel;
-
 /// A builder for [`ZipEntry`].
-///
-/// As with the built type, this builder is intended to solely provide access to the raw underlying data. Any
-/// additional or more complex operations are provided within an extension trait, [`ZipEntryBuilderExt`].
 pub struct ZipEntryBuilder(pub(crate) ZipEntry);
 
 impl From<ZipEntry> for ZipEntryBuilder {
@@ -31,12 +23,11 @@ impl ZipEntryBuilder {
         Self(ZipEntry::new(filename, compression))
     }
 
-    /// Set the compression level.
+    /// Set the deflate compression option.
     ///
-    /// What the precise value means is implementation defined so it
-    /// depends on what compression algorithm is used.
-    pub fn set_compression_level(mut self, level: CompressionLevel) -> Self {
-        self.0.compression_level = level.into_level();
+    /// If the compression type isn't deflate, this option has no effect.
+    pub fn deflate_option(mut self, option: DeflateOption) -> Self {
+        self.0.compression_level = option.into_level();
         self
     }
 
@@ -73,6 +64,16 @@ impl ZipEntryBuilder {
     /// Sets the entry's file comment.
     pub fn comment(mut self, comment: String) -> Self {
         self.0.comment = comment;
+        self
+    }
+
+    /// Sets the entry's Unix permissions mode.
+    ///
+    /// If the attribute host compatability isn't set to Unix, this will have no effect.
+    pub fn unix_permissions(mut self, mode: u16) -> Self {
+        if matches!(self.0.attribute_compatibility, AttributeCompatibility::Unix) {
+            self.0.external_file_attribute = (self.0.external_file_attribute & 0xFFFF) | (mode as u32) << 16;
+        }
         self
     }
 
